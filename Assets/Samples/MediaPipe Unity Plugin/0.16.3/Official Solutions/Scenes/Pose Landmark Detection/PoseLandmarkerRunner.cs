@@ -139,6 +139,7 @@ namespace Mediapipe.Unity.Sample.PoseLandmarkDetection
             {
               _poseLandmarkerResultAnnotationController.DrawNow(default);
             }
+            PerformanceHud.ReportTrackingResult(); // Sports Mayhem: count one tracking result
             DisposeAllMasks(result);
             break;
           case Tasks.Vision.Core.RunningMode.VIDEO:
@@ -150,6 +151,7 @@ namespace Mediapipe.Unity.Sample.PoseLandmarkDetection
             {
               _poseLandmarkerResultAnnotationController.DrawNow(default);
             }
+            PerformanceHud.ReportTrackingResult(); // Sports Mayhem: count one tracking result
             DisposeAllMasks(result);
             break;
           case Tasks.Vision.Core.RunningMode.LIVE_STREAM:
@@ -162,6 +164,7 @@ namespace Mediapipe.Unity.Sample.PoseLandmarkDetection
     private void OnPoseLandmarkDetectionOutput(PoseLandmarkerResult result, Image image, long timestamp)
     {
       _poseLandmarkerResultAnnotationController.DrawLater(result);
+      PerformanceHud.ReportTrackingResult(); // Sports Mayhem: count one tracking result (runs on MediaPipe's thread; the call is thread-safe)
       DisposeAllMasks(result);
     }
 

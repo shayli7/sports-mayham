@@ -123,16 +123,12 @@ public class PerformanceHud : MonoBehaviour
 }
 
 /*
- HOW TO HOOK UP TRACKING FPS
- ---------------------------
- Open the runner script from the MediaPipe plugin's Pose Landmark Detection sample
- (PoseLandmarkerRunner.cs). Find the place where it receives a result:
-   - LIVE_STREAM mode: the result callback method (it receives a PoseLandmarkerResult)
-   - IMAGE / VIDEO mode: right after the Detect / DetectForVideo call inside the loop
- Add this one line there:
+ TRACKING FPS HOOKUP
+ -------------------
+ Already wired into the MediaPipe sample's PoseLandmarkerRunner.cs (look for "Sports Mayhem").
+ The sample is compiled in its own assembly (Mediapipe.Unity.Sample), so its .asmdef
+ references this folder's SportsMayhem.asmdef. That is what lets it call PerformanceHud.
 
-     PerformanceHud.ReportTrackingResult();
-
- Tip: Unity may overwrite changes to sample files when you re-import the sample.
- Copying the runner into Assets/Scripts first avoids losing the edit.
+ Note: re-importing the sample from Package Manager overwrites both edits. Re-apply them,
+ or move to our own runner script (planned for Phase 1).
 */
