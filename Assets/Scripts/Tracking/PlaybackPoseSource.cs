@@ -58,7 +58,7 @@ namespace SportsMayhem.Tracking
         {
             if (_frames == null || _frames.Count == 0) return;
 
-            _playTime += Time.deltaTime * speed;
+            _playTime += Time.unscaledDeltaTime * speed; // unscaled: keeps playing while the game is paused
             var duration = _frames[_frames.Count - 1].time;
 
             // Emit every frame that is due, in order, so smoothing sees the original timing.

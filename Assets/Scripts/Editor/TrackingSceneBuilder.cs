@@ -1,5 +1,7 @@
 using System.IO;
 using System.Linq;
+using SportsMayhem.Avatar;
+using SportsMayhem.Calibration;
 using SportsMayhem.Tracking;
 using UnityEditor;
 using UnityEditor.SceneManagement;
@@ -25,11 +27,11 @@ namespace SportsMayhem.EditorTools
 
             var scene = EditorSceneManager.NewScene(NewSceneSetup.DefaultGameObjects, NewSceneMode.Single);
 
-            // Camera behind the player looking forward (+z): a mirror view of the stick figure.
+            // Third-person camera behind and above the robot, looking forward (+z): you see your avatar from behind.
             var camera = Camera.main;
             if (camera != null)
             {
-                camera.transform.SetPositionAndRotation(new Vector3(0f, 1.3f, -2.2f), Quaternion.identity);
+                camera.transform.SetPositionAndRotation(new Vector3(0f, 1.8f, -2.1f), Quaternion.Euler(12f, 0f, 0f));
                 camera.clearFlags = CameraClearFlags.SolidColor;
                 camera.backgroundColor = new Color(0.12f, 0.13f, 0.16f);
             }
@@ -46,10 +48,23 @@ namespace SportsMayhem.EditorTools
             SetReferences(tracker, ("liveSource", live), ("playbackSource", playback));
             SetReferences(recorder, ("tracker", tracker));
 
+            var calibration = tracking.AddComponent<CalibrationController>();
+            SetReferences(calibration, ("tracker", tracker));
+
+            var robot = new GameObject("Robot Avatar");
+            robot.transform.position = new Vector3(0f, 1.4f, 0f); // shoulder height
+            SetReferences(robot.AddComponent<RobotAvatar>(), ("tracker", tracker));
+
+            // Small debug stick figure off to the side (raw tracking, for comparison with the robot).
             var figure = new GameObject("Pose Debug View");
-            figure.transform.position = new Vector3(0f, 1.4f, 0f);
+            figure.transform.position = new Vector3(1.3f, 1.5f, 0.6f);
+            figure.transform.localScale = Vector3.one * 0.5f;
             var view = figure.AddComponent<PoseDebugView>();
             SetReferences(view, ("tracker", tracker));
+
+            var floor = GameObject.CreatePrimitive(PrimitiveType.Plane);
+            floor.name = "Floor";
+            floor.transform.localScale = new Vector3(2f, 1f, 2f);
 
             new GameObject("Performance HUD").AddComponent<PerformanceHud>();
 
@@ -68,6 +83,13 @@ namespace SportsMayhem.EditorTools
             {
                 Debug.Log($"[Sports Mayhem] Created {ScenePath} and made it the first scene in the build.");
             }
+        }
+
+        [MenuItem("Sports Mayhem/Clear Saved Calibration")]
+        public static void ClearCalibration()
+        {
+            PlayerCalibration.Clear();
+            Debug.Log("[Sports Mayhem] Saved calibration cleared. Calibration will run on the next Play.");
         }
 
         [MenuItem("Sports Mayhem/Open Pose Recordings Folder")]

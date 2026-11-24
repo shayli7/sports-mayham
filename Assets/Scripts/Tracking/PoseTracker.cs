@@ -38,6 +38,24 @@ namespace SportsMayhem.Tracking
         public Mode CurrentMode => mode;
         public PoseSource ActiveSource { get; private set; }
 
+        /// <summary>The camera source when in Live mode, otherwise null.</summary>
+        public MediaPipePoseSource LiveSource => mode == Mode.Live ? liveSource : null;
+
+        /// <summary>
+        /// Width / height of the tracked image as shown upright. Needed to compare horizontal and
+        /// vertical distances in <see cref="PoseFrame.screen"/> units. Assumes 4:3 when unknown (playback).
+        /// </summary>
+        public float ImageAspect
+        {
+            get
+            {
+                var cam = LiveSource != null ? LiveSource.CameraTexture : null;
+                if (cam == null || cam.width <= 16 || cam.height <= 16) return 4f / 3f;
+                var rotated = cam.videoRotationAngle == 90 || cam.videoRotationAngle == 270;
+                return rotated ? (float)cam.height / cam.width : (float)cam.width / cam.height;
+            }
+        }
+
         private readonly PoseFilter _filter = new PoseFilter();
 
         private void Awake()
