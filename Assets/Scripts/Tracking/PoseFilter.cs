@@ -12,11 +12,11 @@ namespace SportsMayhem.Tracking
             [Tooltip("Hz. Lower = steadier when still, but laggier. Try 0.5 to 3.")]
             public float minCutoff = 1.5f;
 
-            [Tooltip("Higher = less lag on fast moves (punches), but more jitter. Try 1 to 10.")]
-            public float beta = 4f;
+            [Tooltip("Higher = less lag on fast moves (punches), but more jitter. Try 4 to 20.")]
+            public float beta = 10f;
 
-            [Tooltip("Hz. Smoothing of the speed estimate. Rarely needs changing.")]
-            public float derivativeCutoff = 1f;
+            [Tooltip("Hz. How quickly the filter notices a move has started. Higher = punches respond sooner.")]
+            public float derivativeCutoff = 4f;
         }
 
         // Gaps longer than this (tracking lost, playback restarted) reset the filter instead of smoothing across them.

@@ -7,7 +7,7 @@ namespace SportsMayhem.Tracking
     /// The one place gameplay gets poses from. Picks the live camera or a recorded session,
     /// smooths the pose, and publishes it.
     ///
-    ///   source (camera / recording) -> RawPoseReceived -> smoothing -> PoseUpdated / Current
+    ///   source (camera / recording) -> RawPoseReceived -> smoothing -> arm depth fix -> PoseUpdated / Current
     /// </summary>
     [DefaultExecutionOrder(-100)]
     public sealed class PoseTracker : MonoBehaviour
@@ -22,6 +22,9 @@ namespace SportsMayhem.Tracking
         [Header("Smoothing")]
         [SerializeField] private bool smoothing = true;
         [SerializeField] private PoseFilter.Settings filterSettings = new PoseFilter.Settings();
+
+        [Header("Arms pointing at the camera")]
+        [SerializeField] private ArmDepthCorrector.Settings armDepth = new ArmDepthCorrector.Settings();
 
         /// <summary>The latest smoothed pose. Read this from gameplay code.</summary>
         public PoseFrame Current { get; } = new PoseFrame();
@@ -57,6 +60,7 @@ namespace SportsMayhem.Tracking
         }
 
         private readonly PoseFilter _filter = new PoseFilter();
+        private readonly ArmDepthCorrector _armDepth = new ArmDepthCorrector();
 
         private void Awake()
         {
@@ -89,6 +93,7 @@ namespace SportsMayhem.Tracking
             Current.CopyFrom(frame);
             if (smoothing) _filter.Apply(Current, filterSettings);
             else _filter.Reset();
+            _armDepth.Apply(Current, armDepth);
 
             PoseUpdated?.Invoke(Current);
         }

@@ -45,8 +45,10 @@ namespace SportsMayhem.Avatar
         [SerializeField] private float maxTorsoAngle = 35f;
 
         [Header("Responsiveness")]
-        [Tooltip("Higher = snappier. The pose is already smoothed; this only blends small gaps.")]
+        [Tooltip("Higher = snappier. Used for the head and body; hands follow tracking directly.")]
         [SerializeField] private float followSpeed = 30f;
+        [Tooltip("Seconds to hold a hand where it was when tracking briefly loses it (fast punches blur).")]
+        [SerializeField] private float lostHandHoldTime = 0.4f;
         [Range(0f, 1f)] [SerializeField] private float minVisibility = 0.4f;
 
         private Transform _rig;      // moves with side steps / ducking
@@ -61,6 +63,7 @@ namespace SportsMayhem.Avatar
         private Quaternion _headRotation = Quaternion.identity;
         private Vector3 _bodyOffset;
         private float _estimatedPlayerArm = 0.54f;
+        private float _leftLostTime, _rightLostTime;
 
         private void Awake()
         {
@@ -164,9 +167,9 @@ namespace SportsMayhem.Avatar
             var scale = robotArm / Mathf.Max(playerArm, 0.2f);
 
             UpdateArm(pose, hasPose, -1f, PoseJoint.LeftShoulder, PoseJoint.LeftElbow, PoseJoint.LeftWrist, PoseJoint.LeftIndex,
-                scale, blend, ref _leftHand, ref _leftElbow, _leftUpper, _leftFore, _leftGlove);
+                scale, blend, ref _leftHand, ref _leftElbow, ref _leftLostTime, _leftUpper, _leftFore, _leftGlove);
             UpdateArm(pose, hasPose, +1f, PoseJoint.RightShoulder, PoseJoint.RightElbow, PoseJoint.RightWrist, PoseJoint.RightIndex,
-                scale, blend, ref _rightHand, ref _rightElbow, _rightUpper, _rightFore, _rightGlove);
+                scale, blend, ref _rightHand, ref _rightElbow, ref _rightLostTime, _rightUpper, _rightFore, _rightGlove);
         }
 
         private Vector3 BodyOffset(PoseFrame pose)
@@ -229,32 +232,33 @@ namespace SportsMayhem.Avatar
 
         private void UpdateArm(PoseFrame pose, bool hasPose, float side,
             PoseJoint shoulderJoint, PoseJoint elbowJoint, PoseJoint wristJoint, PoseJoint indexJoint,
-            float scale, float blend, ref Vector3 hand, ref Vector3 elbowHint,
+            float scale, float blend, ref Vector3 hand, ref Vector3 elbowHint, ref float lostTime,
             Transform upperArm, Transform forearm, Transform glove)
         {
             var shoulder = _torsoRotation * new Vector3(side * shoulderWidth * 0.5f, 0f, 0f);
 
-            Vector3 targetHand;
-            Vector3 targetElbow;
             if (hasPose && pose.IsVisible(wristJoint, minVisibility) && pose.IsVisible(shoulderJoint, minVisibility))
             {
                 // The player's hand relative to their shoulder, scaled to the robot's arm length.
+                // No extra blending here: the pose is already smoothed, more would only add lag.
+                lostTime = 0f;
                 var playerShoulder = pose[shoulderJoint];
-                targetHand = shoulder + (pose[wristJoint] - playerShoulder) * scale;
-                targetElbow = pose.IsVisible(elbowJoint, minVisibility)
+                hand = shoulder + (pose[wristJoint] - playerShoulder) * scale;
+                elbowHint = pose.IsVisible(elbowJoint, minVisibility)
                     ? shoulder + (pose[elbowJoint] - playerShoulder) * scale
                     : shoulder + new Vector3(side * 0.2f, -0.3f, -0.1f);
             }
             else
             {
-                // Hand not visible: drift back to a boxing guard.
-                targetHand = GuardPosition(side);
-                targetElbow = shoulder + new Vector3(side * 0.15f, -0.3f, 0f);
-                blend *= 0.25f;
+                // Hand lost (often motion blur mid-punch): hold it briefly, then drift back to a boxing guard.
+                lostTime += Time.unscaledDeltaTime;
+                if (lostTime > lostHandHoldTime)
+                {
+                    var slow = blend * 0.25f;
+                    hand = Vector3.Lerp(hand, GuardPosition(side), slow);
+                    elbowHint = Vector3.Lerp(elbowHint, shoulder + new Vector3(side * 0.15f, -0.3f, 0f), slow);
+                }
             }
-
-            hand = Vector3.Lerp(hand, targetHand, blend);
-            elbowHint = Vector3.Lerp(elbowHint, targetElbow, blend);
 
             // Bias the bend slightly down and outwards so elbows never flip inside the body.
             var pole = elbowHint + new Vector3(side * 0.05f, -0.05f, 0f);
